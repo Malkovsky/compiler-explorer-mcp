@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling>=1.27,<1.28"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ce-analyzer-mcp"
+version = "0.1.0"
+description = "A bounded Compiler Explorer MCP server for C++ analysis and sharing"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "ce-analyzer-mcp contributors" }]
+keywords = ["compiler-explorer", "cpp", "mcp", "assembly", "static-analysis"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Compilers",
+]
+dependencies = [
+  "httpx>=0.27,<1",
+  "mcp>=2,<3",
+  "packaging>=24,<27",
+  "pydantic>=2,<3",
+]
+
+[project.scripts]
+ce-analyzer-mcp = "ce_analyzer_mcp.cli:main"
+
+[dependency-groups]
+dev = [
+  "build>=1.2,<2",
+  "mypy>=1.14,<2",
+  "pytest>=8,<9",
+  "pytest-cov>=6,<8",
+  "ruff>=0.9,<1",
+  "twine>=6,<7",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src",
+  "/tests",
+  "/LICENSE",
+  "/README.md",
+  "/pyproject.toml",
+  "/uv.lock",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ce_analyzer_mcp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["ASYNC", "B", "E", "F", "I", "RUF", "SIM", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+packages = ["ce_analyzer_mcp"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+testpaths = ["tests"]
+markers = [
+  "live: opt-in test that contacts the configured Compiler Explorer backend",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["ce_analyzer_mcp"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true

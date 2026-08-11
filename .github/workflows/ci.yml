@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CE_LIVE_TEST: "0"
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: "3.14"
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups --python "3.14"
+
+      - name: Check Ruff formatting
+        run: uv run --locked --no-sync ruff format --check .
+
+      - name: Run Ruff lint
+        run: uv run --locked --no-sync ruff check .
+
+      - name: Run mypy
+        run: uv run --locked --no-sync mypy
+
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups --python "${{ matrix.python-version }}"
+
+      - name: Run offline tests with branch coverage
+        run: >-
+          uv run --locked --no-sync pytest -m "not live"
+          --cov=ce_analyzer_mcp
+          --cov-branch
+          --cov-report=term-missing
+          --cov-fail-under=90
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: "3.14"
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups --python "3.14"
+
+      - name: Build source and wheel distributions
+        run: uv run --locked --no-sync python -m build
+
+      - name: Check distribution metadata
+        run: uv run --locked --no-sync twine check dist/*
+
+      - name: Create clean wheel environment from lockfile
+        run: |
+          uv export --locked --no-dev --no-emit-project --format requirements-txt \
+            --output-file "${RUNNER_TEMP}/runtime-requirements.txt"
+          uv venv --python "3.14" "${RUNNER_TEMP}/wheel-smoke"
+          uv pip sync --require-hashes --python "${RUNNER_TEMP}/wheel-smoke/bin/python" \
+            "${RUNNER_TEMP}/runtime-requirements.txt"
+          uv pip install --python "${RUNNER_TEMP}/wheel-smoke/bin/python" \
+            --no-deps dist/*.whl
+
+      - name: Smoke-test wheel import
+        run: |
+          "${RUNNER_TEMP}/wheel-smoke/bin/python" - <<'PY'
+          from importlib.metadata import version
+
+          import ce_analyzer_mcp
+
+          assert ce_analyzer_mcp.__version__ == version("ce-analyzer-mcp")
+          PY
+
+      - name: Smoke-test wheel entry point
+        run: |
+          "${RUNNER_TEMP}/wheel-smoke/bin/ce-analyzer-mcp" --version
+
+      - name: Smoke-test MCP tool list over stdio
+        env:
+          CE_MCP_SMOKE_COMMAND: ${{ runner.temp }}/wheel-smoke/bin/ce-analyzer-mcp
+        run: |
+          "${RUNNER_TEMP}/wheel-smoke/bin/python" - <<'PY'
+          import asyncio
+          import os
+
+          from mcp import ClientSession, StdioServerParameters, stdio_client
+
+          EXPECTED_TOOLS = {
+              "analyze_cpp",
+              "compare_cpp",
+              "compile_cpp",
+              "get_opcode_documentation",
+              "search_analyzers",
+              "search_compilers",
+              "search_libraries",
+          }
+
+
+          async def main() -> None:
+              parameters = StdioServerParameters(
+                  command=os.environ["CE_MCP_SMOKE_COMMAND"],
+                  env={"CE_API_BASE_URL": "http://127.0.0.1:9"},
+              )
+              async with stdio_client(parameters) as streams:
+                  async with ClientSession(*streams) as session:
+                      await session.initialize()
+                      result = await session.list_tools()
+              names = {tool.name for tool in result.tools}
+              if names != EXPECTED_TOOLS:
+                  raise RuntimeError(
+                      f"unexpected MCP tools: expected {sorted(EXPECTED_TOOLS)}, got {sorted(names)}"
+                  )
+
+
+          asyncio.run(main())
+          PY
