@@ -50,6 +50,7 @@ include = [
   "/tests",
   "/LICENSE",
   "/README.md",
+  "/mcp-tools.json",
   "/pyproject.toml",
   "/uv.lock",
 ]

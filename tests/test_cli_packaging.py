@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import email.parser
+import json
 import os
 import subprocess
 import sys
@@ -132,6 +133,7 @@ def test_all_declared_packaging_inputs_exist() -> None:
     required = [
         PROJECT_ROOT / "README.md",
         PROJECT_ROOT / "LICENSE",
+        PROJECT_ROOT / "mcp-tools.json",
         PROJECT_ROOT / "pyproject.toml",
         PROJECT_ROOT / "uv.lock",
         SOURCE_ROOT / "ce_analyzer_mcp" / "__init__.py",
@@ -209,6 +211,7 @@ def test_build_wheel_sdist_metadata_contents_and_import_smoke(tmp_path: Path) ->
         expected = {
             f"{prefix}/README.md",
             f"{prefix}/LICENSE",
+            f"{prefix}/mcp-tools.json",
             f"{prefix}/pyproject.toml",
             f"{prefix}/uv.lock",
             f"{prefix}/src/ce_analyzer_mcp/server.py",
@@ -241,24 +244,9 @@ def test_build_wheel_sdist_metadata_contents_and_import_smoke(tmp_path: Path) ->
         pythonpath=str(wheel),
     )
     assert smoke.returncode == 0, smoke.stderr
-    assert (
-        smoke.stdout
-        == f"{__version__} 9 "
-        + ",".join(
-            [
-                "search_compilers",
-                "search_libraries",
-                "search_analyzers",
-                "compile_cpp",
-                "compare_cpp",
-                "analyze_cpp",
-                "create_shortlink",
-                "get_shortlink",
-                "get_opcode_documentation",
-            ]
-        )
-        + "\n"
-    )
+    snapshot = json.loads((PROJECT_ROOT / "mcp-tools.json").read_text(encoding="utf-8"))
+    snapshot_names = [tool["name"] for tool in snapshot["tools"]]
+    assert smoke.stdout == f"{__version__} {len(snapshot_names)} {','.join(snapshot_names)}\n"
 
     wheel_cli = _run_python(
         "-c",

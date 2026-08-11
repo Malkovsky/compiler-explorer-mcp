@@ -43,6 +43,9 @@ jobs:
       - name: Run mypy
         run: uv run --locked --no-sync mypy
 
+      - name: Check MCP tools snapshot
+        run: uv run --locked --no-sync python -m ce_analyzer_mcp.tool_snapshot --check
+
   tests:
     name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -121,27 +124,25 @@ jobs:
         run: |
           "${RUNNER_TEMP}/wheel-smoke/bin/ce-analyzer-mcp" --version
 
+      - name: Verify wheel MCP tools snapshot
+        run: |
+          "${RUNNER_TEMP}/wheel-smoke/bin/python" \
+            -m ce_analyzer_mcp.tool_snapshot --check mcp-tools.json
+
       - name: Smoke-test MCP tool list over stdio
         env:
           CE_MCP_SMOKE_COMMAND: ${{ runner.temp }}/wheel-smoke/bin/ce-analyzer-mcp
         run: |
           "${RUNNER_TEMP}/wheel-smoke/bin/python" - <<'PY'
           import asyncio
+          import json
           import os
+          from pathlib import Path
 
           from mcp import ClientSession, StdioServerParameters, stdio_client
 
-          EXPECTED_TOOLS = {
-              "analyze_cpp",
-              "compare_cpp",
-              "compile_cpp",
-              "create_shortlink",
-              "get_opcode_documentation",
-              "get_shortlink",
-              "search_analyzers",
-              "search_compilers",
-              "search_libraries",
-          }
+          snapshot = json.loads(Path("mcp-tools.json").read_text(encoding="utf-8"))
+          EXPECTED_TOOLS = {tool["name"] for tool in snapshot["tools"]}
 
 
           async def main() -> None:
@@ -152,9 +153,19 @@ jobs:
               async with stdio_client(parameters) as streams:
                   async with ClientSession(*streams) as session:
                       await session.initialize()
-                      result = await session.list_tools()
-              names = {tool.name for tool in result.tools}
-              if names != EXPECTED_TOOLS:
+                      names = []
+                      cursor = None
+                      seen_cursors = set()
+                      while True:
+                          result = await session.list_tools(cursor=cursor)
+                          names.extend(tool.name for tool in result.tools)
+                          cursor = result.next_cursor
+                          if cursor is None:
+                              break
+                          if cursor in seen_cursors:
+                              raise RuntimeError("tools/list returned a repeated cursor")
+                          seen_cursors.add(cursor)
+              if len(names) != len(set(names)) or set(names) != EXPECTED_TOOLS:
                   raise RuntimeError(
                       f"unexpected MCP tools: expected {sorted(EXPECTED_TOOLS)}, got {sorted(names)}"
                   )

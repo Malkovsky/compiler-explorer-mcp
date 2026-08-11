@@ -1,0 +1,3975 @@
+{
+  "format": "mcp-tools-snapshot",
+  "formatVersion": 1,
+  "server": {
+    "name": "ce-analyzer-mcp",
+    "version": "0.1.0"
+  },
+  "tools": [
+    {
+      "name": "search_compilers",
+      "description": "Search and page through C++ compiler IDs and current stable alias resolutions. Compilation tools transmit supplied source and virtual files to the configured Compiler Explorer backend. Assembly differences are not performance measurements.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 20,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "title": "search_compilersArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "AliasResolution": {
+            "additionalProperties": false,
+            "properties": {
+              "alias": {
+                "title": "Alias",
+                "type": "string"
+              },
+              "candidates": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Candidates",
+                "type": "array"
+              },
+              "resolved_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Resolved Id"
+              },
+              "resolved_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Resolved Name"
+              },
+              "status": {
+                "enum": [
+                  "resolved",
+                  "ambiguous",
+                  "unavailable"
+                ],
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "alias",
+              "status"
+            ],
+            "title": "AliasResolution",
+            "type": "object"
+          },
+          "CompilerInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "aliases": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Aliases",
+                "type": "array"
+              },
+              "family": {
+                "enum": [
+                  "gcc",
+                  "clang",
+                  "msvc",
+                  "other"
+                ],
+                "title": "Family",
+                "type": "string"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "instruction_set": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Instruction Set"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "release_track": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Release Track"
+              },
+              "supports_optimization_output": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Supports Optimization Output"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "family",
+              "version"
+            ],
+            "title": "CompilerInfo",
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "title": "Limit",
+                "type": "integer"
+              },
+              "next_offset": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Next Offset"
+              },
+              "offset": {
+                "title": "Offset",
+                "type": "integer"
+              },
+              "returned": {
+                "title": "Returned",
+                "type": "integer"
+              },
+              "total": {
+                "title": "Total",
+                "type": "integer"
+              },
+              "truncated_after": {
+                "title": "Truncated After",
+                "type": "boolean"
+              },
+              "truncated_before": {
+                "title": "Truncated Before",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "limit",
+              "total",
+              "returned",
+              "truncated_before",
+              "truncated_after"
+            ],
+            "title": "PageInfo",
+            "type": "object"
+          },
+          "Page_CompilerInfo_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/CompilerInfo"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[CompilerInfo]",
+            "type": "object"
+          },
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "aliases": {
+            "items": {
+              "$ref": "#/$defs/AliasResolution"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "compilers": {
+            "$ref": "#/$defs/Page_CompilerInfo_"
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "compilers",
+          "aliases"
+        ],
+        "title": "CompilerSearchResult",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "search_libraries",
+      "description": "Search and page through valid C++ library and exact version-ID pairs. Compilation tools transmit supplied source and virtual files to the configured Compiler Explorer backend. Assembly differences are not performance measurements.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 20,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "title": "search_librariesArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "LibraryInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              },
+              "version_id": {
+                "title": "Version Id",
+                "type": "string"
+              },
+              "version_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Version Name"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "version_id",
+              "version"
+            ],
+            "title": "LibraryInfo",
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "title": "Limit",
+                "type": "integer"
+              },
+              "next_offset": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Next Offset"
+              },
+              "offset": {
+                "title": "Offset",
+                "type": "integer"
+              },
+              "returned": {
+                "title": "Returned",
+                "type": "integer"
+              },
+              "total": {
+                "title": "Total",
+                "type": "integer"
+              },
+              "truncated_after": {
+                "title": "Truncated After",
+                "type": "boolean"
+              },
+              "truncated_before": {
+                "title": "Truncated Before",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "limit",
+              "total",
+              "returned",
+              "truncated_before",
+              "truncated_after"
+            ],
+            "title": "PageInfo",
+            "type": "object"
+          },
+          "Page_LibraryInfo_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/LibraryInfo"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[LibraryInfo]",
+            "type": "object"
+          },
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "libraries": {
+            "$ref": "#/$defs/Page_LibraryInfo_"
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "libraries"
+        ],
+        "title": "LibrarySearchResult",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "search_analyzers",
+      "description": "Discover supported clang-tidy, IWYU, llvm-mca, OSACA, and PVS-Studio IDs and recognized aliases, optionally checking one compiler. Compilation tools transmit supplied source and virtual files to the configured Compiler Explorer backend. Assembly differences are not performance measurements.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "compiler": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compiler"
+          },
+          "limit": {
+            "default": 20,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "title": "search_analyzersArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "AliasResolution": {
+            "additionalProperties": false,
+            "properties": {
+              "alias": {
+                "title": "Alias",
+                "type": "string"
+              },
+              "candidates": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Candidates",
+                "type": "array"
+              },
+              "resolved_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Resolved Id"
+              },
+              "resolved_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Resolved Name"
+              },
+              "status": {
+                "enum": [
+                  "resolved",
+                  "ambiguous",
+                  "unavailable"
+                ],
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "alias",
+              "status"
+            ],
+            "title": "AliasResolution",
+            "type": "object"
+          },
+          "AnalyzerInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "aliases": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Aliases",
+                "type": "array"
+              },
+              "compiler_compatible": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Compiler Compatible"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "kind": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Kind"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "title": "AnalyzerInfo",
+            "type": "object"
+          },
+          "CompilerIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "requested_selector": {
+                "title": "Requested Selector",
+                "type": "string"
+              },
+              "resolved_id": {
+                "title": "Resolved Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "requested_selector",
+              "resolved_id",
+              "name",
+              "version"
+            ],
+            "title": "CompilerIdentity",
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "title": "Limit",
+                "type": "integer"
+              },
+              "next_offset": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Next Offset"
+              },
+              "offset": {
+                "title": "Offset",
+                "type": "integer"
+              },
+              "returned": {
+                "title": "Returned",
+                "type": "integer"
+              },
+              "total": {
+                "title": "Total",
+                "type": "integer"
+              },
+              "truncated_after": {
+                "title": "Truncated After",
+                "type": "boolean"
+              },
+              "truncated_before": {
+                "title": "Truncated Before",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "limit",
+              "total",
+              "returned",
+              "truncated_before",
+              "truncated_after"
+            ],
+            "title": "PageInfo",
+            "type": "object"
+          },
+          "Page_AnalyzerInfo_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/AnalyzerInfo"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[AnalyzerInfo]",
+            "type": "object"
+          },
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "aliases": {
+            "items": {
+              "$ref": "#/$defs/AliasResolution"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "analyzers": {
+            "$ref": "#/$defs/Page_AnalyzerInfo_"
+          },
+          "compiler": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CompilerIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "analyzers",
+          "aliases"
+        ],
+        "title": "AnalyzerSearchResult",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "compile_cpp",
+      "description": "Compile one supplied C++ source bundle without executing it, returning bounded diagnostics, assembly, and optional optimization records. Compilation tools transmit supplied source and virtual files to the configured Compiler Explorer backend. Assembly differences are not performance measurements.",
+      "inputSchema": {
+        "$defs": {
+          "AssemblyFilters": {
+            "additionalProperties": false,
+            "properties": {
+              "comment_only": {
+                "default": true,
+                "title": "Comment Only",
+                "type": "boolean"
+              },
+              "debug_calls": {
+                "default": false,
+                "title": "Debug Calls",
+                "type": "boolean"
+              },
+              "demangle": {
+                "default": true,
+                "title": "Demangle",
+                "type": "boolean"
+              },
+              "directives": {
+                "default": true,
+                "title": "Directives",
+                "type": "boolean"
+              },
+              "intel": {
+                "default": true,
+                "title": "Intel",
+                "type": "boolean"
+              },
+              "labels": {
+                "default": true,
+                "title": "Labels",
+                "type": "boolean"
+              },
+              "library_code": {
+                "default": false,
+                "title": "Library Code",
+                "type": "boolean"
+              },
+              "trim": {
+                "default": false,
+                "title": "Trim",
+                "type": "boolean"
+              }
+            },
+            "title": "AssemblyFilters",
+            "type": "object"
+          },
+          "LibrarySelection": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "title": "LibrarySelection",
+            "type": "object"
+          },
+          "OutputWindow": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "default": 200,
+                "maximum": 1000,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "offset": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            },
+            "title": "OutputWindow",
+            "type": "object"
+          },
+          "VirtualFile": {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "title": "Content",
+                "type": "string"
+              },
+              "path": {
+                "title": "Path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ],
+            "title": "VirtualFile",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "compiler": {
+            "default": "gcc-latest",
+            "title": "Compiler",
+            "type": "string"
+          },
+          "compiler_arguments": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compiler Arguments"
+          },
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/VirtualFile"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Files"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/AssemblyFilters"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "include_assembly": {
+            "default": true,
+            "title": "Include Assembly",
+            "type": "boolean"
+          },
+          "include_diagnostics": {
+            "default": true,
+            "title": "Include Diagnostics",
+            "type": "boolean"
+          },
+          "include_optimization": {
+            "default": false,
+            "title": "Include Optimization",
+            "type": "boolean"
+          },
+          "libraries": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/LibrarySelection"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Libraries"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "window": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OutputWindow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "title": "compile_cppArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "AssemblyLabel": {
+            "additionalProperties": false,
+            "properties": {
+              "end_column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "End Column"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "start_column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Start Column"
+              },
+              "target": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Target"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "AssemblyLabel",
+            "type": "object"
+          },
+          "AssemblyLine": {
+            "additionalProperties": false,
+            "properties": {
+              "address": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Address"
+              },
+              "labels": {
+                "items": {
+                  "$ref": "#/$defs/AssemblyLabel"
+                },
+                "title": "Labels",
+                "type": "array"
+              },
+              "opcodes": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Opcodes",
+                "type": "array"
+              },
+              "source": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SourceLocation"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "text_truncated": {
+                "default": false,
+                "title": "Text Truncated",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "AssemblyLine",
+            "type": "object"
+          },
+          "CompilerIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "requested_selector": {
+                "title": "Requested Selector",
+                "type": "string"
+              },
+              "resolved_id": {
+                "title": "Resolved Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "requested_selector",
+              "resolved_id",
+              "name",
+              "version"
+            ],
+            "title": "CompilerIdentity",
+            "type": "object"
+          },
+          "DiagnosticFlowStep": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Column"
+              },
+              "file": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File"
+              },
+              "line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Line"
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "DiagnosticFlowStep",
+            "type": "object"
+          },
+          "DiagnosticLine": {
+            "additionalProperties": false,
+            "properties": {
+              "stream": {
+                "enum": [
+                  "stdout",
+                  "stderr"
+                ],
+                "title": "Stream",
+                "type": "string"
+              },
+              "tag": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DiagnosticTag"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "text_truncated": {
+                "default": false,
+                "title": "Text Truncated",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "stream",
+              "text"
+            ],
+            "title": "DiagnosticLine",
+            "type": "object"
+          },
+          "DiagnosticLink": {
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text",
+              "url"
+            ],
+            "title": "DiagnosticLink",
+            "type": "object"
+          },
+          "DiagnosticTag": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Column"
+              },
+              "end_column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "End Column"
+              },
+              "end_line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "End Line"
+              },
+              "file": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File"
+              },
+              "flow": {
+                "items": {
+                  "$ref": "#/$defs/DiagnosticFlowStep"
+                },
+                "title": "Flow",
+                "type": "array"
+              },
+              "line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Line"
+              },
+              "link": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DiagnosticLink"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "severity": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Severity"
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "DiagnosticTag",
+            "type": "object"
+          },
+          "OptimizationRecord": {
+            "additionalProperties": false,
+            "properties": {
+              "display": {
+                "title": "Display",
+                "type": "string"
+              },
+              "function": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Function"
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Name"
+              },
+              "optimization_type": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Optimization Type"
+              },
+              "pass_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Pass Name"
+              },
+              "source": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SourceLocation"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "text_truncated": {
+                "default": false,
+                "title": "Text Truncated",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "display"
+            ],
+            "title": "OptimizationRecord",
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "title": "Limit",
+                "type": "integer"
+              },
+              "next_offset": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Next Offset"
+              },
+              "offset": {
+                "title": "Offset",
+                "type": "integer"
+              },
+              "returned": {
+                "title": "Returned",
+                "type": "integer"
+              },
+              "total": {
+                "title": "Total",
+                "type": "integer"
+              },
+              "truncated_after": {
+                "title": "Truncated After",
+                "type": "boolean"
+              },
+              "truncated_before": {
+                "title": "Truncated Before",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "limit",
+              "total",
+              "returned",
+              "truncated_before",
+              "truncated_after"
+            ],
+            "title": "PageInfo",
+            "type": "object"
+          },
+          "Page_AssemblyLine_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/AssemblyLine"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[AssemblyLine]",
+            "type": "object"
+          },
+          "Page_DiagnosticLine_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/DiagnosticLine"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[DiagnosticLine]",
+            "type": "object"
+          },
+          "Page_OptimizationRecord_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/OptimizationRecord"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[OptimizationRecord]",
+            "type": "object"
+          },
+          "SourceLocation": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Column"
+              },
+              "file": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File"
+              },
+              "line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Line"
+              },
+              "main_source": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Main Source"
+              }
+            },
+            "title": "SourceLocation",
+            "type": "object"
+          },
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "assembly": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Page_AssemblyLine_"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "assembly_line_count": {
+            "title": "Assembly Line Count",
+            "type": "integer"
+          },
+          "assembly_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assembly Sha256"
+          },
+          "backend_truncated": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Backend Truncated"
+          },
+          "cache_eligible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cache Eligible"
+          },
+          "cache_hit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cache Hit"
+          },
+          "compiler": {
+            "$ref": "#/$defs/CompilerIdentity"
+          },
+          "diagnostics": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Page_DiagnosticLine_"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "exit_code": {
+            "title": "Exit Code",
+            "type": "integer"
+          },
+          "fingerprint": {
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "optimization": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Page_OptimizationRecord_"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "success",
+              "failed",
+              "timed_out"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "timed_out": {
+            "title": "Timed Out",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fingerprint",
+          "compiler",
+          "status",
+          "exit_code",
+          "timed_out",
+          "assembly_line_count"
+        ],
+        "title": "CompileResult",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "compare_cpp",
+      "description": "Compile one supplied C++ source bundle under two to six configurations and return baseline-relative status, assembly hashes, counts, and bounded unified diffs. Compilation tools transmit supplied source and virtual files to the configured Compiler Explorer backend. Assembly differences are not performance measurements.",
+      "inputSchema": {
+        "$defs": {
+          "AssemblyFilters": {
+            "additionalProperties": false,
+            "properties": {
+              "comment_only": {
+                "default": true,
+                "title": "Comment Only",
+                "type": "boolean"
+              },
+              "debug_calls": {
+                "default": false,
+                "title": "Debug Calls",
+                "type": "boolean"
+              },
+              "demangle": {
+                "default": true,
+                "title": "Demangle",
+                "type": "boolean"
+              },
+              "directives": {
+                "default": true,
+                "title": "Directives",
+                "type": "boolean"
+              },
+              "intel": {
+                "default": true,
+                "title": "Intel",
+                "type": "boolean"
+              },
+              "labels": {
+                "default": true,
+                "title": "Labels",
+                "type": "boolean"
+              },
+              "library_code": {
+                "default": false,
+                "title": "Library Code",
+                "type": "boolean"
+              },
+              "trim": {
+                "default": false,
+                "title": "Trim",
+                "type": "boolean"
+              }
+            },
+            "title": "AssemblyFilters",
+            "type": "object"
+          },
+          "ComparisonCase": {
+            "additionalProperties": false,
+            "properties": {
+              "compiler": {
+                "title": "Compiler",
+                "type": "string"
+              },
+              "compiler_arguments": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 128,
+                "title": "Compiler Arguments",
+                "type": "array"
+              },
+              "filters": {
+                "$ref": "#/$defs/AssemblyFilters"
+              },
+              "label": {
+                "maxLength": 64,
+                "minLength": 1,
+                "title": "Label",
+                "type": "string"
+              },
+              "libraries": {
+                "items": {
+                  "$ref": "#/$defs/LibrarySelection"
+                },
+                "maxItems": 8,
+                "title": "Libraries",
+                "type": "array"
+              }
+            },
+            "required": [
+              "label",
+              "compiler"
+            ],
+            "title": "ComparisonCase",
+            "type": "object"
+          },
+          "LibrarySelection": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "title": "LibrarySelection",
+            "type": "object"
+          },
+          "OutputWindow": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "default": 200,
+                "maximum": 1000,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "offset": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            },
+            "title": "OutputWindow",
+            "type": "object"
+          },
+          "VirtualFile": {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "title": "Content",
+                "type": "string"
+              },
+              "path": {
+                "title": "Path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ],
+            "title": "VirtualFile",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "cases": {
+            "items": {
+              "$ref": "#/$defs/ComparisonCase"
+            },
+            "title": "Cases",
+            "type": "array"
+          },
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/VirtualFile"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Files"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "window": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OutputWindow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "source",
+          "cases"
+        ],
+        "title": "compare_cppArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "AssemblyComparison": {
+            "additionalProperties": false,
+            "properties": {
+              "baseline_input_line_count": {
+                "title": "Baseline Input Line Count",
+                "type": "integer"
+              },
+              "baseline_label": {
+                "title": "Baseline Label",
+                "type": "string"
+              },
+              "baseline_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Baseline Sha256"
+              },
+              "candidate_input_line_count": {
+                "title": "Candidate Input Line Count",
+                "type": "integer"
+              },
+              "candidate_label": {
+                "title": "Candidate Label",
+                "type": "string"
+              },
+              "candidate_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Candidate Sha256"
+              },
+              "diff": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Page_str_"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "diff_input_limit": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Diff Input Limit"
+              },
+              "identical": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Identical"
+              },
+              "omission_code": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "baseline_failed",
+                      "candidate_failed",
+                      "assembly_unavailable",
+                      "diff_input_limit_exceeded"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Omission Code"
+              },
+              "omission_reason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Omission Reason"
+              }
+            },
+            "required": [
+              "baseline_label",
+              "candidate_label",
+              "baseline_input_line_count",
+              "candidate_input_line_count"
+            ],
+            "title": "AssemblyComparison",
+            "type": "object"
+          },
+          "CompareCaseResult": {
+            "additionalProperties": false,
+            "properties": {
+              "assembly_line_count": {
+                "title": "Assembly Line Count",
+                "type": "integer"
+              },
+              "assembly_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Assembly Sha256"
+              },
+              "backend_truncated": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Backend Truncated"
+              },
+              "cache_eligible": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Cache Eligible"
+              },
+              "cache_hit": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Cache Hit"
+              },
+              "compiler": {
+                "$ref": "#/$defs/CompilerIdentity"
+              },
+              "diagnostics": {
+                "$ref": "#/$defs/Page_DiagnosticLine_"
+              },
+              "exit_code": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Exit Code"
+              },
+              "fingerprint": {
+                "title": "Fingerprint",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "success",
+                  "failed",
+                  "timed_out",
+                  "error"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "timed_out": {
+                "title": "Timed Out",
+                "type": "boolean"
+              },
+              "warnings": {
+                "items": {
+                  "$ref": "#/$defs/WarningItem"
+                },
+                "title": "Warnings",
+                "type": "array"
+              }
+            },
+            "required": [
+              "label",
+              "fingerprint",
+              "compiler",
+              "status",
+              "exit_code",
+              "timed_out",
+              "diagnostics",
+              "assembly_line_count"
+            ],
+            "title": "CompareCaseResult",
+            "type": "object"
+          },
+          "CompilerIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "requested_selector": {
+                "title": "Requested Selector",
+                "type": "string"
+              },
+              "resolved_id": {
+                "title": "Resolved Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "requested_selector",
+              "resolved_id",
+              "name",
+              "version"
+            ],
+            "title": "CompilerIdentity",
+            "type": "object"
+          },
+          "DiagnosticFlowStep": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Column"
+              },
+              "file": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File"
+              },
+              "line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Line"
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "DiagnosticFlowStep",
+            "type": "object"
+          },
+          "DiagnosticLine": {
+            "additionalProperties": false,
+            "properties": {
+              "stream": {
+                "enum": [
+                  "stdout",
+                  "stderr"
+                ],
+                "title": "Stream",
+                "type": "string"
+              },
+              "tag": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DiagnosticTag"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "text_truncated": {
+                "default": false,
+                "title": "Text Truncated",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "stream",
+              "text"
+            ],
+            "title": "DiagnosticLine",
+            "type": "object"
+          },
+          "DiagnosticLink": {
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text",
+              "url"
+            ],
+            "title": "DiagnosticLink",
+            "type": "object"
+          },
+          "DiagnosticTag": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Column"
+              },
+              "end_column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "End Column"
+              },
+              "end_line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "End Line"
+              },
+              "file": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File"
+              },
+              "flow": {
+                "items": {
+                  "$ref": "#/$defs/DiagnosticFlowStep"
+                },
+                "title": "Flow",
+                "type": "array"
+              },
+              "line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Line"
+              },
+              "link": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DiagnosticLink"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "severity": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Severity"
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "DiagnosticTag",
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "title": "Limit",
+                "type": "integer"
+              },
+              "next_offset": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Next Offset"
+              },
+              "offset": {
+                "title": "Offset",
+                "type": "integer"
+              },
+              "returned": {
+                "title": "Returned",
+                "type": "integer"
+              },
+              "total": {
+                "title": "Total",
+                "type": "integer"
+              },
+              "truncated_after": {
+                "title": "Truncated After",
+                "type": "boolean"
+              },
+              "truncated_before": {
+                "title": "Truncated Before",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "limit",
+              "total",
+              "returned",
+              "truncated_before",
+              "truncated_after"
+            ],
+            "title": "PageInfo",
+            "type": "object"
+          },
+          "Page_DiagnosticLine_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/DiagnosticLine"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[DiagnosticLine]",
+            "type": "object"
+          },
+          "Page_str_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[str]",
+            "type": "object"
+          },
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "benchmark_warning": {
+            "$ref": "#/$defs/WarningItem"
+          },
+          "cases": {
+            "items": {
+              "$ref": "#/$defs/CompareCaseResult"
+            },
+            "title": "Cases",
+            "type": "array"
+          },
+          "comparisons": {
+            "items": {
+              "$ref": "#/$defs/AssemblyComparison"
+            },
+            "title": "Comparisons",
+            "type": "array"
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "cases",
+          "comparisons",
+          "benchmark_warning"
+        ],
+        "title": "CompareResult",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "analyze_cpp",
+      "description": "Run up to four selected Compiler Explorer analyzers in one compile-only request and return normalized bounded per-tool output with aggregate failure status and static-modeling caveats. Compilation tools transmit supplied source and virtual files to the configured Compiler Explorer backend. Assembly differences are not performance measurements.",
+      "inputSchema": {
+        "$defs": {
+          "AnalyzerSelection": {
+            "additionalProperties": false,
+            "properties": {
+              "arguments": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Arguments",
+                "type": "array"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "title": "AnalyzerSelection",
+            "type": "object"
+          },
+          "AssemblyFilters": {
+            "additionalProperties": false,
+            "properties": {
+              "comment_only": {
+                "default": true,
+                "title": "Comment Only",
+                "type": "boolean"
+              },
+              "debug_calls": {
+                "default": false,
+                "title": "Debug Calls",
+                "type": "boolean"
+              },
+              "demangle": {
+                "default": true,
+                "title": "Demangle",
+                "type": "boolean"
+              },
+              "directives": {
+                "default": true,
+                "title": "Directives",
+                "type": "boolean"
+              },
+              "intel": {
+                "default": true,
+                "title": "Intel",
+                "type": "boolean"
+              },
+              "labels": {
+                "default": true,
+                "title": "Labels",
+                "type": "boolean"
+              },
+              "library_code": {
+                "default": false,
+                "title": "Library Code",
+                "type": "boolean"
+              },
+              "trim": {
+                "default": false,
+                "title": "Trim",
+                "type": "boolean"
+              }
+            },
+            "title": "AssemblyFilters",
+            "type": "object"
+          },
+          "LibrarySelection": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "title": "LibrarySelection",
+            "type": "object"
+          },
+          "OutputWindow": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "default": 200,
+                "maximum": 1000,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "offset": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            },
+            "title": "OutputWindow",
+            "type": "object"
+          },
+          "VirtualFile": {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "title": "Content",
+                "type": "string"
+              },
+              "path": {
+                "title": "Path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ],
+            "title": "VirtualFile",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "analyzers": {
+            "items": {
+              "$ref": "#/$defs/AnalyzerSelection"
+            },
+            "title": "Analyzers",
+            "type": "array"
+          },
+          "compiler": {
+            "default": "clang-latest",
+            "title": "Compiler",
+            "type": "string"
+          },
+          "compiler_arguments": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compiler Arguments"
+          },
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/VirtualFile"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Files"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/AssemblyFilters"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "libraries": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/LibrarySelection"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Libraries"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "window": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OutputWindow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "source",
+          "analyzers"
+        ],
+        "title": "analyze_cppArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "AnalyzerRunResult": {
+            "additionalProperties": false,
+            "properties": {
+              "exit_code": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Exit Code"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "output": {
+                "$ref": "#/$defs/Page_DiagnosticLine_"
+              },
+              "requested_selector": {
+                "title": "Requested Selector",
+                "type": "string"
+              },
+              "resolved_id": {
+                "title": "Resolved Id",
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "success",
+                  "failed",
+                  "missing",
+                  "malformed"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "warnings": {
+                "items": {
+                  "$ref": "#/$defs/WarningItem"
+                },
+                "title": "Warnings",
+                "type": "array"
+              }
+            },
+            "required": [
+              "requested_selector",
+              "resolved_id",
+              "name",
+              "status",
+              "output"
+            ],
+            "title": "AnalyzerRunResult",
+            "type": "object"
+          },
+          "CompilerIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "requested_selector": {
+                "title": "Requested Selector",
+                "type": "string"
+              },
+              "resolved_id": {
+                "title": "Resolved Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "requested_selector",
+              "resolved_id",
+              "name",
+              "version"
+            ],
+            "title": "CompilerIdentity",
+            "type": "object"
+          },
+          "DiagnosticFlowStep": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Column"
+              },
+              "file": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File"
+              },
+              "line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Line"
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "DiagnosticFlowStep",
+            "type": "object"
+          },
+          "DiagnosticLine": {
+            "additionalProperties": false,
+            "properties": {
+              "stream": {
+                "enum": [
+                  "stdout",
+                  "stderr"
+                ],
+                "title": "Stream",
+                "type": "string"
+              },
+              "tag": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DiagnosticTag"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "text_truncated": {
+                "default": false,
+                "title": "Text Truncated",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "stream",
+              "text"
+            ],
+            "title": "DiagnosticLine",
+            "type": "object"
+          },
+          "DiagnosticLink": {
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text",
+              "url"
+            ],
+            "title": "DiagnosticLink",
+            "type": "object"
+          },
+          "DiagnosticTag": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Column"
+              },
+              "end_column": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "End Column"
+              },
+              "end_line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "End Line"
+              },
+              "file": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File"
+              },
+              "flow": {
+                "items": {
+                  "$ref": "#/$defs/DiagnosticFlowStep"
+                },
+                "title": "Flow",
+                "type": "array"
+              },
+              "line": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Line"
+              },
+              "link": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DiagnosticLink"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "severity": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Severity"
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "DiagnosticTag",
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "title": "Limit",
+                "type": "integer"
+              },
+              "next_offset": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Next Offset"
+              },
+              "offset": {
+                "title": "Offset",
+                "type": "integer"
+              },
+              "returned": {
+                "title": "Returned",
+                "type": "integer"
+              },
+              "total": {
+                "title": "Total",
+                "type": "integer"
+              },
+              "truncated_after": {
+                "title": "Truncated After",
+                "type": "boolean"
+              },
+              "truncated_before": {
+                "title": "Truncated Before",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offset",
+              "limit",
+              "total",
+              "returned",
+              "truncated_before",
+              "truncated_after"
+            ],
+            "title": "PageInfo",
+            "type": "object"
+          },
+          "Page_DiagnosticLine_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/DiagnosticLine"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[DiagnosticLine]",
+            "type": "object"
+          },
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "analyzers": {
+            "items": {
+              "$ref": "#/$defs/AnalyzerRunResult"
+            },
+            "title": "Analyzers",
+            "type": "array"
+          },
+          "backend_truncated": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Backend Truncated"
+          },
+          "cache_eligible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cache Eligible"
+          },
+          "cache_hit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cache Hit"
+          },
+          "compiler": {
+            "$ref": "#/$defs/CompilerIdentity"
+          },
+          "diagnostics": {
+            "$ref": "#/$defs/Page_DiagnosticLine_"
+          },
+          "exit_code": {
+            "title": "Exit Code",
+            "type": "integer"
+          },
+          "fingerprint": {
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "success",
+              "failed",
+              "timed_out"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "timed_out": {
+            "title": "Timed Out",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fingerprint",
+          "compiler",
+          "status",
+          "exit_code",
+          "timed_out",
+          "diagnostics",
+          "analyzers"
+        ],
+        "title": "AnalyzeResult",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "create_shortlink",
+      "description": "Validate and permanently store one C++ source with one to six resolved compiler configurations, returning a shareable Compiler Explorer shortlink. Shortlink creation transmits source and settings for persistent, publicly retrievable storage by the configured Compiler Explorer backend; there is no delete operation.",
+      "inputSchema": {
+        "$defs": {
+          "AssemblyFilters": {
+            "additionalProperties": false,
+            "properties": {
+              "comment_only": {
+                "default": true,
+                "title": "Comment Only",
+                "type": "boolean"
+              },
+              "debug_calls": {
+                "default": false,
+                "title": "Debug Calls",
+                "type": "boolean"
+              },
+              "demangle": {
+                "default": true,
+                "title": "Demangle",
+                "type": "boolean"
+              },
+              "directives": {
+                "default": true,
+                "title": "Directives",
+                "type": "boolean"
+              },
+              "intel": {
+                "default": true,
+                "title": "Intel",
+                "type": "boolean"
+              },
+              "labels": {
+                "default": true,
+                "title": "Labels",
+                "type": "boolean"
+              },
+              "library_code": {
+                "default": false,
+                "title": "Library Code",
+                "type": "boolean"
+              },
+              "trim": {
+                "default": false,
+                "title": "Trim",
+                "type": "boolean"
+              }
+            },
+            "title": "AssemblyFilters",
+            "type": "object"
+          },
+          "LibrarySelection": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "title": "LibrarySelection",
+            "type": "object"
+          },
+          "ShortlinkCompilerConfiguration": {
+            "additionalProperties": false,
+            "properties": {
+              "compiler": {
+                "default": "gcc-latest",
+                "title": "Compiler",
+                "type": "string"
+              },
+              "compiler_arguments": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 128,
+                "title": "Compiler Arguments",
+                "type": "array"
+              },
+              "filters": {
+                "$ref": "#/$defs/AssemblyFilters"
+              },
+              "libraries": {
+                "items": {
+                  "$ref": "#/$defs/LibrarySelection"
+                },
+                "maxItems": 8,
+                "title": "Libraries",
+                "type": "array"
+              }
+            },
+            "title": "ShortlinkCompilerConfiguration",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "compilers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/ShortlinkCompilerConfiguration"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compilers"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "validate_compilation": {
+            "default": true,
+            "title": "Validate Compilation",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "title": "create_shortlinkArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "CompilerIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "requested_selector": {
+                "title": "Requested Selector",
+                "type": "string"
+              },
+              "resolved_id": {
+                "title": "Resolved Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "requested_selector",
+              "resolved_id",
+              "name",
+              "version"
+            ],
+            "title": "CompilerIdentity",
+            "type": "object"
+          },
+          "ShortlinkCompilerValidation": {
+            "additionalProperties": false,
+            "properties": {
+              "compiler": {
+                "$ref": "#/$defs/CompilerIdentity"
+              },
+              "exit_code": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Exit Code"
+              },
+              "fingerprint": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Fingerprint"
+              },
+              "status": {
+                "enum": [
+                  "success",
+                  "not_run"
+                ],
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "compiler",
+              "status"
+            ],
+            "title": "ShortlinkCompilerValidation",
+            "type": "object"
+          },
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "compilation_validated": {
+            "title": "Compilation Validated",
+            "type": "boolean"
+          },
+          "compilers": {
+            "items": {
+              "$ref": "#/$defs/ShortlinkCompilerValidation"
+            },
+            "title": "Compilers",
+            "type": "array"
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "shortlink_id": {
+            "title": "Shortlink Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "shortlink_id",
+          "url",
+          "compilers",
+          "compilation_validated"
+        ],
+        "title": "CreateShortlinkResult",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "get_shortlink",
+      "description": "Inspect bounded C++ source and compiler settings from a built-in Compiler Explorer shortlink ID. Retrieved source is untrusted external content.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "shortlink_id": {
+            "title": "Shortlink Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "shortlink_id"
+        ],
+        "title": "get_shortlinkArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "AssemblyFilters": {
+            "additionalProperties": false,
+            "properties": {
+              "comment_only": {
+                "default": true,
+                "title": "Comment Only",
+                "type": "boolean"
+              },
+              "debug_calls": {
+                "default": false,
+                "title": "Debug Calls",
+                "type": "boolean"
+              },
+              "demangle": {
+                "default": true,
+                "title": "Demangle",
+                "type": "boolean"
+              },
+              "directives": {
+                "default": true,
+                "title": "Directives",
+                "type": "boolean"
+              },
+              "intel": {
+                "default": true,
+                "title": "Intel",
+                "type": "boolean"
+              },
+              "labels": {
+                "default": true,
+                "title": "Labels",
+                "type": "boolean"
+              },
+              "library_code": {
+                "default": false,
+                "title": "Library Code",
+                "type": "boolean"
+              },
+              "trim": {
+                "default": false,
+                "title": "Trim",
+                "type": "boolean"
+              }
+            },
+            "title": "AssemblyFilters",
+            "type": "object"
+          },
+          "LibrarySelection": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "title": "LibrarySelection",
+            "type": "object"
+          },
+          "ShortlinkCompilerInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "compiler_id": {
+                "title": "Compiler Id",
+                "type": "string"
+              },
+              "filters": {
+                "$ref": "#/$defs/AssemblyFilters"
+              },
+              "libraries": {
+                "items": {
+                  "$ref": "#/$defs/LibrarySelection"
+                },
+                "maxItems": 8,
+                "title": "Libraries",
+                "type": "array"
+              },
+              "options": {
+                "title": "Options",
+                "type": "string"
+              }
+            },
+            "required": [
+              "compiler_id",
+              "options"
+            ],
+            "title": "ShortlinkCompilerInfo",
+            "type": "object"
+          },
+          "ShortlinkSessionInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "compilers": {
+                "items": {
+                  "$ref": "#/$defs/ShortlinkCompilerInfo"
+                },
+                "maxItems": 8,
+                "title": "Compilers",
+                "type": "array"
+              },
+              "language": {
+                "const": "c++",
+                "default": "c++",
+                "title": "Language",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Session Id"
+              },
+              "source": {
+                "title": "Source",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "title": "ShortlinkSessionInfo",
+            "type": "object"
+          },
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "has_trees": {
+            "default": false,
+            "title": "Has Trees",
+            "type": "boolean"
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/$defs/ShortlinkSessionInfo"
+            },
+            "maxItems": 8,
+            "title": "Sessions",
+            "type": "array"
+          },
+          "shortlink_id": {
+            "title": "Shortlink Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "shortlink_id",
+          "url",
+          "sessions"
+        ],
+        "title": "GetShortlinkResult",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_opcode_documentation",
+      "description": "Look up bounded opcode documentation using explicit instruction-set and opcode IDs. Compilation tools transmit supplied source and virtual files to the configured Compiler Explorer backend. Assembly differences are not performance measurements.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "instruction_set": {
+            "title": "Instruction Set",
+            "type": "string"
+          },
+          "opcode": {
+            "title": "Opcode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instruction_set",
+          "opcode"
+        ],
+        "title": "get_opcode_documentationArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "WarningItem": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "WarningItem",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "html": {
+            "title": "Html",
+            "type": "string"
+          },
+          "html_truncated": {
+            "default": false,
+            "title": "Html Truncated",
+            "type": "boolean"
+          },
+          "instruction_set": {
+            "title": "Instruction Set",
+            "type": "string"
+          },
+          "opcode": {
+            "title": "Opcode",
+            "type": "string"
+          },
+          "response_truncated": {
+            "default": false,
+            "title": "Response Truncated",
+            "type": "boolean"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "tooltip": {
+            "title": "Tooltip",
+            "type": "string"
+          },
+          "tooltip_truncated": {
+            "default": false,
+            "title": "Tooltip Truncated",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/WarningItem"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "instruction_set",
+          "opcode",
+          "tooltip",
+          "html",
+          "source_url"
+        ],
+        "title": "OpcodeDocumentation",
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    }
+  ]
+}

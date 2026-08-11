@@ -120,6 +120,35 @@ For compatibility with clients that expose only text content, results up to
 a short pointer instead of duplicating the full result, which bounds large
 assembly responses.
 
+### Repository tool snapshot
+
+The root-level [`mcp-tools.json`](mcp-tools.json) is a normalized, sanitized
+snapshot of the complete paginated MCP `tools/list` result. It lets repository
+scanners inspect the server's prompt-facing tool definitions without installing
+dependencies, executing this project, or contacting Compiler Explorer.
+
+The snapshot preserves each tool's name, title, description, input schema,
+output schema, annotations, icons, and execution metadata when available. It
+excludes the JSON-RPC envelope, pagination cursors, tool-level `_meta`,
+credentials, runtime argument values, and tool results. A schema property that
+is itself named `_meta` remains part of that schema.
+
+Regenerate it after changing tool registrations, schemas, descriptions, or
+annotations:
+
+```bash
+uv run --locked python -m ce_analyzer_mcp.tool_snapshot
+```
+
+Verify that the committed snapshot is current without rewriting it:
+
+```bash
+uv run --locked python -m ce_analyzer_mcp.tool_snapshot --check
+```
+
+CI performs this freshness check and compares the installed wheel's complete
+tool list against the snapshot.
+
 ### Shared input objects
 
 Compilation tools accept the main source as the top-level string `source`, not
