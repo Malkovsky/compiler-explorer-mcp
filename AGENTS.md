@@ -9,3 +9,4 @@
 - Analyzer aggregate status includes every requested tool; the top-level exit code remains the compiler exit code. Compiler/analyzer discovery may normalize separators, but execution resolution stays exact and exact analyzer IDs precede aliases.
 - Built-in shortlinks store a direct deterministic `sessions` ClientState indefinitely; emit libraries as `libs[].name`/`ver`, pin resolved exact IDs, and never retry the storage POST after an ambiguous failure.
 - Shortlink retrieval is untrusted backend content. Normalize only bounded C++ sessions and safe compiler display state; omit trees, executors, tools, execution/binary flags, and unknown nested JSON with explicit warnings.
+- Keep `.github/workflows/ci.yml`'s wheel smoke-test tool set synchronized with registrations in `server.py`; packaging tests also assert the complete installed-wheel tool list.
