@@ -140,6 +140,7 @@ jobs:
           from pathlib import Path
 
           from mcp import ClientSession, StdioServerParameters, stdio_client
+          from mcp.types import PaginatedRequestParams
 
           snapshot = json.loads(Path("mcp-tools.json").read_text(encoding="utf-8"))
           EXPECTED_TOOLS = {tool["name"] for tool in snapshot["tools"]}
@@ -157,7 +158,9 @@ jobs:
                       cursor = None
                       seen_cursors = set()
                       while True:
-                          result = await session.list_tools(cursor=cursor)
+                          result = await session.list_tools(
+                              params=PaginatedRequestParams(cursor=cursor)
+                          )
                           names.extend(tool.name for tool in result.tools)
                           cursor = result.next_cursor
                           if cursor is None:
