@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ce-analyzer-mcp"
-version = "0.1.0"
+version = "0.2.1"
 description = "A bounded Compiler Explorer MCP server for C++ analysis and sharing"
 readme = "README.md"
 requires-python = ">=3.10"

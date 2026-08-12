@@ -88,8 +88,8 @@ def test_main_starts_only_stdio_transport(monkeypatch: pytest.MonkeyPatch) -> No
 @pytest.mark.parametrize(
     ("arguments", "expected"),
     [
-        (("-m", "ce_analyzer_mcp", "--version"), "0.1.0\n"),
-        (("-m", "ce_analyzer_mcp.cli", "--version"), "0.1.0\n"),
+        (("-m", "ce_analyzer_mcp", "--version"), "0.2.1\n"),
+        (("-m", "ce_analyzer_mcp.cli", "--version"), "0.2.1\n"),
     ],
 )
 def test_module_version_forms(arguments: tuple[str, ...], expected: str) -> None:

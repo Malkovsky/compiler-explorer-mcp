@@ -376,7 +376,7 @@ def test_module_level_server_identity_and_alias() -> None:
     assert server is mcp
     assert mcp.name == "ce-analyzer-mcp"
     assert mcp.title == "Compiler Explorer C++ Analyzer"
-    assert mcp.version == "0.1.0"
+    assert mcp.version == "0.2.1"
     assert "transmit supplied source" in (mcp.instructions or "")
 
 

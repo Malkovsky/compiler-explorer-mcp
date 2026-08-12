@@ -917,8 +917,8 @@ annotated tag. Approve the `pypi` environment deployment only after confirming
 the tag's CI run is green:
 
 ```bash
-git tag -a v0.1.0 -m "Release 0.1.0"
-git push origin v0.1.0
+git tag -a v0.2.1 -m "Release 0.2.1"
+git push origin v0.2.1
 ```
 
 PyPI filenames and released versions are immutable. If a release has already
