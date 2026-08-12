@@ -2,7 +2,7 @@
 
 [![Token summary](https://how-much-tokens.onrender.com/badge/github/Malkovsky/compiler-explorer-mcp.svg?metric=summary&ref=b1569e9ffeb88a2e50dfce716ad9c6849ab2bf8d&encoding=o200k_base&v=repo-inventory-v12)](https://how-much-tokens.onrender.com/github/Malkovsky/compiler-explorer-mcp/commit/b1569e9ffeb88a2e50dfce716ad9c6849ab2bf8d?encoding=o200k_base)
 
-**TL; DR** MCP bridge to [godbolt.org](godbolt.org) or equivalent server.
+**TL; DR** MCP bridge to [godbolt.org](https://godbolt.org/) or equivalent server.
 
 ---
 
