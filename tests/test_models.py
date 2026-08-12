@@ -279,6 +279,7 @@ def test_compile_request_defaults_are_compile_only_shaped_and_independent() -> N
     assert first.filters == AssemblyFilters()
     assert first.include_diagnostics is True
     assert first.include_assembly is True
+    assert first.assembly_format == "detailed"
     assert first.include_optimization is False
     assert first.window == OutputWindow(offset=0, limit=DEFAULT_WINDOW_SIZE)
     first.compiler_arguments.append("-O2")

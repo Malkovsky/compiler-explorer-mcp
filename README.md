@@ -309,6 +309,7 @@ assembly, and optimization records.
   },
   "include_diagnostics": true,
   "include_assembly": true,
+  "assembly_format": "text",
   "include_optimization": false,
   "window": {
     "offset": 0,
@@ -330,6 +331,19 @@ is a structured result rather than an MCP transport error.
 When `include_assembly` is `false`, the request sets Compiler Explorer's
 `skipAsm` option. Assembly output, line count, and hash are then intentionally
 unavailable instead of downloading assembly only to discard it.
+
+`assembly_format` controls the returned assembly item shape:
+
+- `"detailed"` is the backward-compatible default and returns objects with text,
+  source mappings, opcodes, addresses, and labels.
+- `"text"` returns sanitized assembly strings and is recommended when only the
+  generated instructions are needed. Paging, total line count, and the full
+  normalized assembly hash remain available.
+
+Text mode usually uses substantially fewer response tokens because it omits
+empty per-line metadata. The input selection determines whether `assembly.items`
+contains detailed objects or strings; the default detailed response payload is
+unchanged for backward compatibility.
 
 ### `compare_cpp`
 

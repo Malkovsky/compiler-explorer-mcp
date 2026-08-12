@@ -5,7 +5,7 @@ import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
@@ -275,6 +275,7 @@ def create_server(lifespan: ServerLifespan = app_lifespan) -> MCPServer:
         filters: AssemblyFilters | None = None,
         include_diagnostics: bool = True,
         include_assembly: bool = True,
+        assembly_format: Literal["detailed", "text"] = "detailed",
         include_optimization: bool = False,
         window: OutputWindow | None = None,
     ) -> CompileResult:
@@ -290,6 +291,7 @@ def create_server(lifespan: ServerLifespan = app_lifespan) -> MCPServer:
                     filters=filters or AssemblyFilters(),
                     include_diagnostics=include_diagnostics,
                     include_assembly=include_assembly,
+                    assembly_format=assembly_format,
                     include_optimization=include_optimization,
                     window=window or OutputWindow(),
                 )

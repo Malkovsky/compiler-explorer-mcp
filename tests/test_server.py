@@ -198,7 +198,11 @@ class FakeWorkflows:
         )
         assembly = (
             _page(
-                [AssemblyLine(text="mov eax, 7"), AssemblyLine(text="ret")],
+                (
+                    [AssemblyLine(text="mov eax, 7"), AssemblyLine(text="ret")]
+                    if request.assembly_format == "detailed"
+                    else ["mov eax, 7", "ret"]
+                ),
                 offset=request.window.offset,
                 limit=request.window.limit,
             )
@@ -441,6 +445,7 @@ def test_representative_calls_for_all_tools_return_typed_structured_output() -> 
                         "compiler_arguments": ["-O2", "-Wall"],
                         "libraries": [{"id": "fmt", "version": "110"}],
                         "filters": {"intel": False, "trim": True},
+                        "assembly_format": "text",
                         "include_optimization": True,
                         "window": {"offset": 0, "limit": 3},
                     },
@@ -523,6 +528,7 @@ def test_representative_calls_for_all_tools_return_typed_structured_output() -> 
     assert compile_request.source.files[0].path == "include/value.hpp"
     assert compile_request.filters.intel is False
     assert compile_request.filters.trim is True
+    assert compile_request.assembly_format == "text"
     assert compile_request.include_optimization is True
     compare_request = requests["compare_cpp"]
     assert isinstance(compare_request, CompareCppRequest)

@@ -940,6 +940,15 @@
         },
         "additionalProperties": false,
         "properties": {
+          "assembly_format": {
+            "default": "detailed",
+            "enum": [
+              "detailed",
+              "text"
+            ],
+            "title": "Assembly Format",
+            "type": "string"
+          },
           "compiler": {
             "default": "gcc-latest",
             "title": "Compiler",
@@ -1579,6 +1588,27 @@
             "title": "Page[OptimizationRecord]",
             "type": "object"
           },
+          "Page_str_": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page": {
+                "$ref": "#/$defs/PageInfo"
+              }
+            },
+            "required": [
+              "items",
+              "page"
+            ],
+            "title": "Page[str]",
+            "type": "object"
+          },
           "SourceLocation": {
             "additionalProperties": false,
             "properties": {
@@ -1662,10 +1692,14 @@
                 "$ref": "#/$defs/Page_AssemblyLine_"
               },
               {
+                "$ref": "#/$defs/Page_str_"
+              },
+              {
                 "type": "null"
               }
             ],
-            "default": null
+            "default": null,
+            "title": "Assembly"
           },
           "assembly_line_count": {
             "title": "Assembly Line Count",

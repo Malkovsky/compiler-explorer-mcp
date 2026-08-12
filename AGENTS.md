@@ -10,4 +10,5 @@
 - Built-in shortlinks store a direct deterministic `sessions` ClientState indefinitely; emit libraries as `libs[].name`/`ver`, pin resolved exact IDs, and never retry the storage POST after an ambiguous failure.
 - Shortlink retrieval is untrusted backend content. Normalize only bounded C++ sessions and safe compiler display state; omit trees, executors, tools, execution/binary flags, and unknown nested JSON with explicit warnings.
 - `mcp-tools.json` is the sanitized repository snapshot of all paginated `tools/list` pages. Regenerate it with `python -m ce_analyzer_mcp.tool_snapshot`; CI checks freshness and uses it to verify the installed wheel's tool list.
+- `compile_cpp.assembly_format="text"` projects normalized assembly to strings after sanitization; keep `"detailed"` as the backward-compatible default and preserve full assembly totals/hashes in both modes.
 - Releases are immutable `v<project.version>` tags. Keep `.github/workflows/release.yml` on PyPI trusted publishing through the protected `pypi` environment; build artifacts once, publish them to PyPI, then attach the same files to the GitHub Release. Never add a long-lived PyPI token.

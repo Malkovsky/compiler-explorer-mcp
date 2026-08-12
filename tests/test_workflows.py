@@ -410,6 +410,43 @@ def test_compile_workflow_payload_normalization_windows_hash_and_no_source_echo(
     assert source_marker not in result.model_dump_json()
 
 
+def test_compile_text_assembly_format_returns_sanitized_strings_with_full_metadata() -> None:
+    client = FakeClient(
+        {
+            "g++-15": {
+                "code": 0,
+                "timedOut": False,
+                "asm": [
+                    {
+                        "text": "\u001b[31mmov eax, 7\u001b[0m",
+                        "opcodes": ["b807000000"],
+                        "address": 16,
+                    },
+                    {"text": "ret", "source": {"line": 1, "column": 2}},
+                ],
+            }
+        }
+    )
+    workflows = Workflows(client, FakeCatalog())  # type: ignore[arg-type]
+
+    result = _run(
+        workflows.compile_cpp(
+            CompileCppRequest(
+                source=SourceBundle(source="int f();"),
+                assembly_format="text",
+                window=OutputWindow(offset=0, limit=1),
+            )
+        )
+    )
+
+    assert result.assembly is not None
+    assert result.assembly.items == ["mov eax, 7"]
+    assert result.assembly.page.total == 2
+    assert result.assembly.page.next_offset == 1
+    assert result.assembly_line_count == 2
+    assert result.assembly_sha256 is not None and len(result.assembly_sha256) == 64
+
+
 def test_compile_omits_unrequested_sections_and_skips_assembly() -> None:
     client = FakeClient(
         {

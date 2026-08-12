@@ -19,6 +19,7 @@ from ce_analyzer_mcp.models import (
     AnalyzerRunResult,
     AnalyzerSearchResult,
     AssemblyComparison,
+    AssemblyLine,
     CompareCaseResult,
     CompareCppRequest,
     CompareResult,
@@ -141,9 +142,13 @@ class Workflows:
             if request.include_diagnostics
             else None
         )
-        assembly = (
-            window_page(normalized.assembly, request.window) if request.include_assembly else None
-        )
+        assembly: Page[AssemblyLine] | Page[str] | None = None
+        if request.include_assembly:
+            assembly = (
+                window_page(normalized.assembly, request.window)
+                if request.assembly_format == "detailed"
+                else window_page([line.text for line in normalized.assembly], request.window)
+            )
         optimization = (
             window_page(normalized.optimization, request.window)
             if request.include_optimization

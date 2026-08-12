@@ -237,6 +237,7 @@ class CompileCppRequest(StrictModel):
     filters: AssemblyFilters = Field(default_factory=AssemblyFilters)
     include_diagnostics: bool = True
     include_assembly: bool = True
+    assembly_format: Literal["detailed", "text"] = "detailed"
     include_optimization: bool = False
     window: OutputWindow = Field(default_factory=OutputWindow)
 
@@ -650,7 +651,7 @@ class CompileResult(StrictModel):
     cache_eligible: bool | None = None
     cache_hit: bool | None = None
     diagnostics: Page[DiagnosticLine] | None = None
-    assembly: Page[AssemblyLine] | None = None
+    assembly: Page[AssemblyLine] | Page[str] | None = None
     optimization: Page[OptimizationRecord] | None = None
     assembly_line_count: int
     assembly_sha256: str | None = None
