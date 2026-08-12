@@ -1,4 +1,10 @@
-# ce-analyzer-mcp
+# Compiler explorer MCP
+
+[![Token summary](https://how-much-tokens.onrender.com/badge/github/Malkovsky/compiler-explorer-mcp.svg?metric=summary&ref=b1569e9ffeb88a2e50dfce716ad9c6849ab2bf8d&encoding=o200k_base&v=repo-inventory-v12)](https://how-much-tokens.onrender.com/github/Malkovsky/compiler-explorer-mcp/commit/b1569e9ffeb88a2e50dfce716ad9c6849ab2bf8d?encoding=o200k_base)
+
+**TL; DR** MCP bridge to [godbolt.org](godbolt.org) or equivalent server.
+
+---
 
 `ce-analyzer-mcp` is a bounded Model Context Protocol (MCP) 2
 server for C++ analysis through an existing [Compiler Explorer](https://godbolt.org/)
@@ -857,6 +863,53 @@ transport failure or one of those explicit transient statuses. Retry-After is
 capped, and redirects are disabled so credentials are not forwarded to another
 origin. A shortlink-storage POST uses exactly one attempt and is never retried;
 shortlink-info GET requests use the normal metadata GET policy.
+
+## Releasing
+
+Releases are built from `v<version>` tags by
+[`release.yml`](.github/workflows/release.yml). The workflow requires the tag to
+exactly match `[project].version` in `pyproject.toml`, reruns the offline quality
+and coverage checks, validates the repository tool snapshot, builds and
+smoke-tests the wheel and source distribution, publishes them to PyPI through
+OIDC trusted publishing, and then creates a GitHub Release containing those same
+artifacts.
+
+The `publish-pypi` job uses a protected GitHub environment named `pypi`. Configure
+that environment with required reviewer approval and restrict deployment to tags
+matching `v*`. Do not add a PyPI API token or password as a repository secret.
+
+Configure the PyPI trusted publisher with these exact values:
+
+- PyPI project: `ce-analyzer-mcp`
+- GitHub owner: `Malkovsky`
+- Repository: `compiler-explorer-mcp`
+- Workflow filename: `release.yml`
+- Environment: `pypi`
+
+For the first publication, create a pending trusted publisher from the PyPI
+account publishing settings before pushing the tag. For later releases, update
+the version in both `pyproject.toml` and
+`src/ce_analyzer_mcp/__about__.py`, then regenerate all version-bearing metadata
+before committing:
+
+```bash
+uv lock
+uv run --locked python -m ce_analyzer_mcp.tool_snapshot
+uv run --locked pytest -m "not live"
+```
+
+After the release commit is on `main` and CI is green, create and push an
+annotated tag. Approve the `pypi` environment deployment only after confirming
+the tag's CI run is green:
+
+```bash
+git tag -a v0.1.0 -m "Release 0.1.0"
+git push origin v0.1.0
+```
+
+PyPI filenames and released versions are immutable. If a release has already
+been published, fix forward with a new version rather than moving or recreating
+its tag.
 
 ## License
 
